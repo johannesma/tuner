@@ -42,18 +42,42 @@ body {
 
 body.body--spiritual {
   background-color: #1a1726;
-  background-image:
-    radial-gradient(
-      ellipse 120% 100% at 50% 100%,
-      #2e2a44 0%,
-      #241f36 42%,
-      #1a1726 100%
-    );
-  background-size: 100% 120%, 100% 100%;
-  background-position: center 42%, center;
+  background-image: radial-gradient(
+    ellipse 120% 100% at 50% 100%,
+    #2e2a44 0%,
+    #241f36 42%,
+    #1a1726 100%
+  );
+  background-size: 100% 120%;
+  background-position: center 42%;
   background-repeat: no-repeat;
   transition: background-color 0.45s ease;
   overflow: hidden;
+}
+
+body.body--spiritual::before {
+  content: '';
+  position: fixed;
+  /* Oversized so horizontal drift never shows empty edges */
+  inset: 0 -6%;
+  z-index: 0;
+  pointer-events: none;
+  background: url('/stars.png') center / cover no-repeat;
+  animation: stars-wave 40s ease-in-out infinite alternate;
+}
+
+body.body--spiritual #root {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes stars-wave {
+  from {
+    transform: translateX(-3%);
+  }
+  to {
+    transform: translateX(3%);
+  }
 }
 
 button {
