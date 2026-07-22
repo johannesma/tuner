@@ -7,20 +7,49 @@ type AlignTunerProps = {
 }
 
 const DRIFT_RADIUS_PX = 300
-const LAYER_OPACITY = 0.33
+/** 20 layers ≈ full opacity when stacked. */
+const LAYER_OPACITY = 0.1
+const LAYER_COUNT = 15
+/** Cap glow so 20 screen-blended layers don't blow out. */
+const GLOW_OPACITY_MAX = 0.18
 const CENTS_CLAMP = 100
 /** Fully stacked only when this close — near perfect. */
-const CENTER_CENTS = 3
+const CENTER_CENTS = 5
 /** Horizontal needle travel (matches traditional ±50¢ range). */
 const NEEDLE_CENTS_CLAMP = 50
 const NEEDLE_TRAVEL_PX = 36
 
-/** Distinct glows — screen-blend into a bright new color when stacked. */
-const GLOW_LAYERS = [
-  { angle: 20, color: '#ff3b5c' },
-  { angle: 145, color: '#2ee6c5' },
-  { angle: 250, color: '#5b7cff' },
-] as const
+/** Evenly spaced around the circle. */
+const LAYER_ANGLES = Array.from(
+  { length: LAYER_COUNT },
+  (_, i) => (360 / LAYER_COUNT) * i,
+)
+
+/**
+ * Pitch-class (+ octave) sets the palette root so E2 ≠ A2 when stacked.
+ * In tune: hues cluster around that root → a note-specific mix.
+ * Drifted: full spectrum, still rotated by the nearest note.
+ */
+function glowColorForLayer(
+  index: number,
+  note: DetectedNote | null,
+  inTune: boolean,
+): string {
+  const root =
+    note != null
+      ? (((note.midi % 12) + 12) % 12) * 30 + note.octave * 8
+      : 0
+
+  if (inTune && note != null) {
+    const spread = 48
+    const hue =
+      (root - spread / 2 + (spread / (LAYER_COUNT - 1)) * index + 360) % 360
+    return `hsl(${hue} 90% 58%)`
+  }
+
+  const hue = (root + (360 / LAYER_COUNT) * index + 360) % 360
+  return `hsl(${hue} 85% 58%)`
+}
 
 function offsetForAngle(degrees: number, radius: number) {
   const radians = (degrees * Math.PI) / 180
@@ -42,9 +71,14 @@ function radiusForCents(cents: number | null): number {
   return Math.sqrt(t) * DRIFT_RADIUS_PX
 }
 
-/** Invisible at full drift; 33% when stacked at center. */
+/** Invisible at full drift; stacked opacity when centered. */
 function opacityForRadius(radius: number): number {
   return LAYER_OPACITY * (1 - radius / DRIFT_RADIUS_PX)
+}
+
+/** 2× when fully drifted, 1× when centered. */
+function scaleForRadius(radius: number): number {
+  return 1 + radius / (DRIFT_RADIUS_PX / 2)
 }
 
 function needleOffsetX(cents: number | null): number {
@@ -60,6 +94,7 @@ export function AlignTuner({ note, cents, isListening }: AlignTunerProps) {
   const inTune = cents != null && Math.abs(cents) <= CENTER_CENTS
   const radius = radiusForCents(cents)
   const opacity = opacityForRadius(radius)
+  const scale = scaleForRadius(radius)
   const noteLabel = note ? `${note.name}${note.octave}` : '—'
   const offsetX = needleOffsetX(cents)
 
@@ -72,28 +107,46 @@ export function AlignTuner({ note, cents, isListening }: AlignTunerProps) {
       </p>
 
       <div className="align-tuner__stage" aria-hidden="true">
-        {GLOW_LAYERS.map(({ angle, color }) => {
-          const { x, y } = offsetForAngle(angle, radius)
-          const glowStrength = 1 - radius / DRIFT_RADIUS_PX
-          return (
-            <div
-              key={angle}
-              className="align-tuner__sprite"
-              style={{
-                ['--glow' as string]: color,
-                ['--glow-strength' as string]: String(glowStrength),
-                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-              }}
-            >
-              <img
-                className="align-tuner__layer"
-                src="/center.png"
-                alt=""
-                style={{ opacity }}
+        <div className="align-tuner__glows">
+          {LAYER_ANGLES.map((angle, index) => {
+            const { x, y } = offsetForAngle(angle, radius)
+            const glowStrength =
+              GLOW_OPACITY_MAX * (1 - radius / DRIFT_RADIUS_PX)
+            return (
+              <div
+                key={`glow-${angle}`}
+                className="align-tuner__glow"
+                style={{
+                  ['--glow' as string]: glowColorForLayer(index, note, inTune),
+                  opacity: glowStrength,
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scale})`,
+                }}
               />
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
+
+        <div className="align-tuner__figures">
+          {LAYER_ANGLES.map((angle) => {
+            const { x, y } = offsetForAngle(angle, radius)
+            return (
+              <div
+                key={`figure-${angle}`}
+                className="align-tuner__sprite"
+                style={{
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scale})`,
+                }}
+              >
+                <img
+                  className="align-tuner__layer"
+                  src="/center.png"
+                  alt=""
+                  style={{ opacity }}
+                />
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <p
