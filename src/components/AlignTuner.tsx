@@ -11,6 +11,9 @@ const LAYER_OPACITY = 0.33
 const CENTS_CLAMP = 100
 /** Fully stacked only when this close — near perfect. */
 const CENTER_CENTS = 3
+/** Horizontal needle travel (matches traditional ±50¢ range). */
+const NEEDLE_CENTS_CLAMP = 50
+const NEEDLE_TRAVEL_PX = 36
 
 /** Distinct glows — screen-blend into a bright new color when stacked. */
 const GLOW_LAYERS = [
@@ -39,17 +42,18 @@ function radiusForCents(cents: number | null): number {
   return Math.sqrt(t) * DRIFT_RADIUS_PX
 }
 
-/** Invisible at full drift (200px); 33% when stacked at center. */
+/** Invisible at full drift; 33% when stacked at center. */
 function opacityForRadius(radius: number): number {
   return LAYER_OPACITY * (1 - radius / DRIFT_RADIUS_PX)
 }
 
-function statusForCents(cents: number | null, isListening: boolean): string {
-  if (!isListening) return 'Start listening, then play a note'
-  if (cents == null) return 'Listening…'
-  if (Math.abs(cents) <= CENTER_CENTS) return 'In tune'
-  if (cents > 0) return 'Sharp — go lower'
-  return 'Flat — go higher'
+function needleOffsetX(cents: number | null): number {
+  if (cents == null) return 0
+  const clamped = Math.max(
+    -NEEDLE_CENTS_CLAMP,
+    Math.min(NEEDLE_CENTS_CLAMP, cents),
+  )
+  return (clamped / NEEDLE_CENTS_CLAMP) * NEEDLE_TRAVEL_PX
 }
 
 export function AlignTuner({ note, cents, isListening }: AlignTunerProps) {
@@ -57,12 +61,12 @@ export function AlignTuner({ note, cents, isListening }: AlignTunerProps) {
   const radius = radiusForCents(cents)
   const opacity = opacityForRadius(radius)
   const noteLabel = note ? `${note.name}${note.octave}` : '—'
+  const offsetX = needleOffsetX(cents)
 
   return (
     <div
       className={`align-tuner ${inTune ? 'align-tuner--in-tune' : ''} ${!isListening ? 'align-tuner--idle' : ''}`}
     >
-      <p className="align-tuner__hint">{statusForCents(cents, isListening)}</p>
       <p className="align-tuner__note" aria-live="polite">
         {noteLabel}
       </p>
@@ -98,6 +102,18 @@ export function AlignTuner({ note, cents, isListening }: AlignTunerProps) {
       >
         In tune
       </p>
+
+      {isListening && (
+        <div className="align-cents" aria-hidden="true">
+          <div className="align-cents__track">
+            <span className="align-cents__center" />
+            <span
+              className={`align-cents__needle ${inTune ? 'align-cents__needle--tune' : ''}`}
+              style={{ transform: `translateX(${offsetX}px)` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

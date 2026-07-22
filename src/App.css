@@ -460,3 +460,47 @@
 .align-tuner__status--visible {
   opacity: 1;
 }
+
+.align-cents {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 20;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.align-cents__track {
+  position: relative;
+  width: 9rem;
+  height: 1.35rem;
+}
+
+.align-cents__center {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 0.55rem;
+  transform: translateX(-50%);
+  background: rgba(242, 239, 232, 0.35);
+}
+
+.align-cents__needle {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 2px;
+  height: 1.1rem;
+  margin-left: -1px;
+  border-radius: 1px 1px 0 0;
+  background: var(--needle);
+  opacity: 0.2;
+  transform-origin: bottom center;
+  transition: transform 80ms linear, background 0.4s ease, opacity 0.4s ease;
+}
+
+.align-cents__needle--tune {
+  background: var(--accent);
+  opacity: 1;
+}
