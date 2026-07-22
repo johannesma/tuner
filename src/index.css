@@ -12,6 +12,7 @@
   --font-display: 'Fraunces', Georgia, serif;
   --font-body: 'Figtree', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-hud: 'Orbitron', system-ui, sans-serif;
   color: var(--ink);
   background: var(--bg0);
   font-family: var(--font-body);
@@ -36,6 +37,23 @@ body {
   margin: 0;
   min-width: 320px;
   background: #000;
+  transition: background-color 0.45s ease;
+}
+
+body.body--spiritual {
+  background-color: #1a1726;
+  background-image:
+    radial-gradient(
+      ellipse 120% 100% at 50% 100%,
+      #2e2a44 0%,
+      #241f36 42%,
+      #1a1726 100%
+    );
+  background-size: 100% 120%, 100% 100%;
+  background-position: center 42%, center;
+  background-repeat: no-repeat;
+  transition: background-color 0.45s ease;
+  overflow: hidden;
 }
 
 button {

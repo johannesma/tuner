@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTuner } from './audio/useTuner'
 import { AlignTuner } from './components/AlignTuner'
+import { SpiritualStars } from './components/SpiritualStars'
 import { TunerDisplay } from './components/TunerDisplay'
 import './App.css'
 
@@ -57,6 +58,11 @@ function App() {
   }, [tuner.isListening, tuner.start, tuner.stop])
 
   useEffect(() => {
+    document.body.classList.toggle('body--spiritual', isSpiritual)
+    return () => document.body.classList.remove('body--spiritual')
+  }, [isSpiritual])
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || isTypingTarget(event.target)) return
 
@@ -80,6 +86,28 @@ function App() {
 
   return (
     <div className={`app ${isSpiritual ? 'app--spiritual' : ''}`}>
+      {isSpiritual && (
+        <>
+          <SpiritualStars />
+          <div className="spiritual-grain" aria-hidden="true" />
+          {tuner.isListening && (
+            <div
+              className="spiritual-level"
+              role="meter"
+              aria-label="Microphone level"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(tuner.level * 100)}
+            >
+              <div
+                className="spiritual-level__fill"
+                style={{ transform: `scaleX(${Math.min(1, tuner.level)})` }}
+              />
+            </div>
+          )}
+        </>
+      )}
+
       {!isSpiritual && (
         <header className="app__header">
           <p className="app__brand">Tuner</p>
@@ -113,16 +141,56 @@ function App() {
         )}
       </main>
 
-      <button
-        type="button"
-        className={`listen-toggle ${tuner.isListening ? 'listen-toggle--active' : ''}`}
-        onClick={toggleListening}
-        aria-keyshortcuts="Space"
-        title="Space"
-      >
-        {tuner.isListening ? 'Stop' : 'Start listening'}
-        <span className="listen-toggle__hint">Space</span>
-      </button>
+      {tuner.isListening ? (
+        <button
+          type="button"
+          className="listen-icon listen-icon--mute"
+          onClick={toggleListening}
+          aria-keyshortcuts="Space"
+          aria-label="Mute microphone"
+          title="Space"
+        >
+          <svg
+            className="listen-icon__glyph"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" />
+            <path d="M5 11a7 7 0 0 0 14 0" />
+            <path d="M12 18v3" />
+            <path d="M4 4l16 16" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="listen-icon listen-icon--mic"
+          onClick={toggleListening}
+          aria-keyshortcuts="Space"
+          aria-label="Start listening"
+          title="Space"
+        >
+          <svg
+            className="listen-icon__glyph"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" />
+            <path d="M5 11a7 7 0 0 0 14 0" />
+            <path d="M12 18v3" />
+          </svg>
+        </button>
+      )}
 
       <button
         type="button"

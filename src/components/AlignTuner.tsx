@@ -6,12 +6,12 @@ type AlignTunerProps = {
   isListening: boolean
 }
 
-const DRIFT_RADIUS_PX = 300
+const DRIFT_RADIUS_PX = 100
 /** 20 layers ≈ full opacity when stacked. */
-const LAYER_OPACITY = 0.1
-const LAYER_COUNT = 15
+const LAYER_OPACITY = 0.2
+const LAYER_COUNT = 6
 /** Cap glow so 20 screen-blended layers don't blow out. */
-const GLOW_OPACITY_MAX = 0.18
+const GLOW_OPACITY_MAX = 0.20
 const CENTS_CLAMP = 100
 /** Fully stacked only when this close — near perfect. */
 const CENTER_CENTS = 5
@@ -78,7 +78,7 @@ function opacityForRadius(radius: number): number {
 
 /** 2× when fully drifted, 1× when centered. */
 function scaleForRadius(radius: number): number {
-  return 1 + radius / (DRIFT_RADIUS_PX / 2)
+  return 1 + radius / DRIFT_RADIUS_PX
 }
 
 function needleOffsetX(cents: number | null): number {
@@ -95,38 +95,45 @@ export function AlignTuner({ note, cents, isListening }: AlignTunerProps) {
   const radius = radiusForCents(cents)
   const opacity = opacityForRadius(radius)
   const scale = scaleForRadius(radius)
-  const noteLabel = note ? `${note.name}${note.octave}` : '—'
+  const noteLabel = note ? `${note.name}${note.octave}` : ''
   const offsetX = needleOffsetX(cents)
 
   return (
     <div
       className={`align-tuner ${inTune ? 'align-tuner--in-tune' : ''} ${!isListening ? 'align-tuner--idle' : ''}`}
     >
-      <p className="align-tuner__note" aria-live="polite">
-        {noteLabel}
-      </p>
-
-      <div className="align-tuner__stage" aria-hidden="true">
-        <div className="align-tuner__glows">
+      <div className="align-tuner__stage">
+        <div className="align-tuner__glows" aria-hidden="true">
           {LAYER_ANGLES.map((angle, index) => {
             const { x, y } = offsetForAngle(angle, radius)
             const glowStrength =
               GLOW_OPACITY_MAX * (1 - radius / DRIFT_RADIUS_PX)
+            const glowColor = glowColorForLayer(index, note, inTune)
             return (
-              <div
+              <svg
                 key={`glow-${angle}`}
                 className="align-tuner__glow"
+                viewBox="0 0 100 100"
                 style={{
-                  ['--glow' as string]: glowColorForLayer(index, note, inTune),
                   opacity: glowStrength,
                   transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scale})`,
                 }}
-              />
+              >
+                <polygon
+                  points="50,8 92,92 8,92"
+                  fill={glowColor}
+                  fillOpacity="0.35"
+                />
+              </svg>
             )
           })}
         </div>
 
-        <div className="align-tuner__figures">
+        <p className="align-tuner__note" aria-live="polite">
+          {noteLabel}
+        </p>
+
+        <div className="align-tuner__figures" aria-hidden="true">
           {LAYER_ANGLES.map((angle) => {
             const { x, y } = offsetForAngle(angle, radius)
             return (
@@ -148,13 +155,6 @@ export function AlignTuner({ note, cents, isListening }: AlignTunerProps) {
           })}
         </div>
       </div>
-
-      <p
-        className={`align-tuner__status ${inTune ? 'align-tuner__status--visible' : ''}`}
-        aria-hidden={!inTune}
-      >
-        In tune
-      </p>
 
       {isListening && (
         <div className="align-cents" aria-hidden="true">

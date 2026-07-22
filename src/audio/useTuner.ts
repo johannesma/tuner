@@ -136,9 +136,26 @@ export function useTuner() {
         status: 'listening',
       })
 
+      let lastUiAt = 0
+      /** Pitch is ~45ms/call; ~10 Hz keeps the main thread responsive. */
+      const UI_INTERVAL_MS = 100
+      /** Keep last good reading on screen when mic level drops. */
+      let held: {
+        frequency: number
+        note: ReturnType<typeof frequencyToNote>
+        cents: number
+      } | null = null
+
       const tick = () => {
         const active = audioRef.current
         if (!active) return
+
+        const now = performance.now()
+        if (now - lastUiAt < UI_INTERVAL_MS) {
+          active.raf = requestAnimationFrame(tick)
+          return
+        }
+        lastUiAt = now
 
         active.analyser.getFloatTimeDomainData(buffer)
 
@@ -153,39 +170,38 @@ export function useTuner() {
         const rms = Math.sqrt(sumSq / buffer.length)
         const level = Math.min(1, Math.max(rms * 8, peak * 1.5))
 
-        if (rms < RMS_GATE) {
-          setState((prev) => ({
-            ...prev,
-            frequency: null,
-            note: null,
-            cents: null,
-            clarity: false,
-            level,
-          }))
-        } else {
+        let frequency: number | null = null
+        let note: ReturnType<typeof frequencyToNote> | null = null
+        let cents: number | null = null
+        let clarity = false
+
+        if (rms >= RMS_GATE) {
           const raw = detectPitch(buffer)
-          const frequency = smooth(raw)
+          frequency = smooth(raw)
 
           if (frequency != null && frequency >= MIN_HZ && frequency <= MAX_HZ) {
-            const note = frequencyToNote(frequency)
-
-            setState({
-              status: 'listening',
-              error: null,
-              frequency,
-              note,
-              cents: note.cents,
-              clarity: Math.abs(note.cents) <= 50,
-              level,
-            })
-          } else {
-            setState((prev) => ({
-              ...prev,
-              level,
-              clarity: false,
-            }))
+            note = frequencyToNote(frequency)
+            cents = note.cents
+            clarity = Math.abs(note.cents) <= 50
+            held = { frequency, note, cents }
           }
         }
+
+        if (!note && held) {
+          frequency = held.frequency
+          note = held.note
+          cents = held.cents
+        }
+
+        setState({
+          status: 'listening',
+          error: null,
+          frequency: note ? frequency : null,
+          note,
+          cents: note ? cents : null,
+          clarity,
+          level,
+        })
 
         active.raf = requestAnimationFrame(tick)
       }
