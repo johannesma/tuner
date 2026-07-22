@@ -1,0 +1,45 @@
+:root {
+  --bg0: #e8e2d6;
+  --bg1: #d4cdc0;
+  --ink: #1c1915;
+  --ink-soft: #5c554c;
+  --panel: rgba(255, 252, 246, 0.72);
+  --line: rgba(28, 25, 21, 0.12);
+  --accent: #0f6e56;
+  --accent-soft: rgba(15, 110, 86, 0.18);
+  --warn: #9a3412;
+  --needle: #1c1915;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Figtree', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  color: var(--ink);
+  background: var(--bg0);
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(15, 110, 86, 0.14), transparent 55%),
+    linear-gradient(165deg, var(--bg0), var(--bg1));
+}
+
+button {
+  font: inherit;
+}
