@@ -1,24 +1,46 @@
-import { YIN } from 'pitchfinder'
+import { Macleod, YIN } from 'pitchfinder'
 
 export type PitchDetector = (buffer: Float32Array) => number | null
 
-/** Guitar-friendly range: low E (~82Hz) through high frets */
+/** Prefer McLeod when confident; fall back to YIN. */
 export function createPitchDetector(sampleRate: number): PitchDetector {
-  return YIN({
+  const yin = YIN({
     sampleRate,
     threshold: 0.15,
     probabilityThreshold: 0.1,
   })
+
+  const macleod = Macleod({
+    sampleRate,
+    bufferSize: 4096,
+    cutoff: 0.9,
+  })
+
+  return (buffer: Float32Array) => {
+    const mac = macleod(buffer)
+    if (
+      mac &&
+      Number.isFinite(mac.freq) &&
+      mac.freq > 0 &&
+      mac.probability >= 0.85
+    ) {
+      return mac.freq
+    }
+
+    return yin(buffer)
+  }
 }
 
 /**
- * Smooth out occasional YIN outliers with a short median of recent pitches.
+ * Smooth out occasional outliers with a short median.
+ * Clears history on silence so the next note isn't stuck on the previous one.
  */
-export function createPitchSmoother(windowSize = 5) {
+export function createPitchSmoother(windowSize = 3) {
   const recent: number[] = []
 
   return (frequency: number | null): number | null => {
     if (frequency == null || !Number.isFinite(frequency) || frequency <= 0) {
+      recent.length = 0
       return null
     }
 

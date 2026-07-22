@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  closestGuitarString,
-  centsFromTarget,
-  frequencyToNote,
-  type DetectedNote,
-} from '../lib/notes'
+import { frequencyToNote, type DetectedNote } from '../lib/notes'
 import { createPitchDetector, createPitchSmoother } from './pitch'
 
 export type TunerStatus = 'idle' | 'listening' | 'error'
@@ -15,8 +10,9 @@ export type TunerState = {
   frequency: number | null
   note: DetectedNote | null
   cents: number | null
-  stringName: string | null
   clarity: boolean
+  /** 0–1 mic input level for feedback */
+  level: number
 }
 
 const INITIAL: TunerState = {
@@ -25,9 +21,13 @@ const INITIAL: TunerState = {
   frequency: null,
   note: null,
   cents: null,
-  stringName: null,
   clarity: false,
+  level: 0,
 }
+
+const RMS_GATE = 0.0008
+const MIN_HZ = 40
+const MAX_HZ = 5000
 
 function describeMicError(err: unknown): string {
   if (!(err instanceof Error)) {
@@ -102,9 +102,10 @@ export function useTuner() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
+          channelCount: 1,
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false,
+          autoGainControl: true,
         },
       })
 
@@ -113,13 +114,14 @@ export function useTuner() {
 
       const source = context.createMediaStreamSource(stream)
       const analyser = context.createAnalyser()
-      analyser.fftSize = 2048
+      analyser.fftSize = 4096
       analyser.smoothingTimeConstant = 0
+
       source.connect(analyser)
 
       const buffer = new Float32Array(analyser.fftSize)
       const detectPitch = createPitchDetector(context.sampleRate)
-      const smooth = createPitchSmoother(5)
+      const smooth = createPitchSmoother(3)
 
       audioRef.current = {
         context,
@@ -140,41 +142,48 @@ export function useTuner() {
 
         active.analyser.getFloatTimeDomainData(buffer)
 
-        // Silence gate: skip very quiet frames
-        let rms = 0
+        let sumSq = 0
+        let peak = 0
         for (let i = 0; i < buffer.length; i++) {
           const sample = buffer[i] ?? 0
-          rms += sample * sample
+          sumSq += sample * sample
+          const abs = Math.abs(sample)
+          if (abs > peak) peak = abs
         }
-        rms = Math.sqrt(rms / buffer.length)
+        const rms = Math.sqrt(sumSq / buffer.length)
+        const level = Math.min(1, Math.max(rms * 8, peak * 1.5))
 
-        if (rms < 0.01) {
+        if (rms < RMS_GATE) {
           setState((prev) => ({
             ...prev,
             frequency: null,
             note: null,
             cents: null,
-            stringName: null,
             clarity: false,
+            level,
           }))
         } else {
           const raw = detectPitch(buffer)
           const frequency = smooth(raw)
 
-          if (frequency != null && frequency >= 60 && frequency <= 1200) {
+          if (frequency != null && frequency >= MIN_HZ && frequency <= MAX_HZ) {
             const note = frequencyToNote(frequency)
-            const string = closestGuitarString(frequency)
-            const cents = centsFromTarget(frequency, string.frequency)
 
             setState({
               status: 'listening',
               error: null,
               frequency,
               note,
-              cents,
-              stringName: string.name,
-              clarity: Math.abs(cents) <= 50,
+              cents: note.cents,
+              clarity: Math.abs(note.cents) <= 50,
+              level,
             })
+          } else {
+            setState((prev) => ({
+              ...prev,
+              level,
+              clarity: false,
+            }))
           }
         }
 

@@ -5,16 +5,24 @@ type TunerDisplayProps = {
   note: DetectedNote | null
   frequency: number | null
   cents: number | null
-  stringName: string | null
   isListening: boolean
+  level: number
+}
+
+function hintForCents(cents: number | null, isListening: boolean): string {
+  if (!isListening) return 'Start listening, then play a note'
+  if (cents == null) return 'Listening…'
+  if (Math.abs(cents) <= 5) return 'In tune'
+  if (cents > 0) return 'Sharp — go lower'
+  return 'Flat — go higher'
 }
 
 export function TunerDisplay({
   note,
   frequency,
   cents,
-  stringName,
   isListening,
+  level,
 }: TunerDisplayProps) {
   const inTune = cents != null && Math.abs(cents) <= 5
   const noteLabel = note ? `${note.name}${note.octave}` : '—'
@@ -27,9 +35,7 @@ export function TunerDisplay({
     <div
       className={`display ${inTune ? 'display--in-tune' : ''} ${!isListening ? 'display--idle' : ''}`}
     >
-      <p className="display__string">
-        {stringName ? `Closest string · ${stringName}` : 'Play a string'}
-      </p>
+      <p className="display__hint">{hintForCents(cents, isListening)}</p>
       <p className="display__note" aria-live="polite">
         {noteLabel}
       </p>
@@ -38,7 +44,32 @@ export function TunerDisplay({
         <span>{centsLabel}</span>
         <span>{freqLabel}</span>
       </div>
-      {inTune && <p className="display__status">In tune</p>}
+
+      {isListening && (
+        <div className="display__level" title="Microphone input level">
+          <span className="display__level-label">Mic</span>
+          <div
+            className="display__level-track"
+            role="meter"
+            aria-label="Microphone level"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(level * 100)}
+          >
+            <div
+              className="display__level-fill"
+              style={{ transform: `scaleX(${Math.min(1, level)})` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <p
+        className={`display__status ${inTune ? 'display__status--visible' : ''}`}
+        aria-hidden={!inTune}
+      >
+        In tune
+      </p>
     </div>
   )
 }

@@ -1,8 +1,8 @@
 # Tuner
 
-Browser guitar tuner built with **Vite + React + TypeScript**. Uses the microphone via `getUserMedia` and Web Audio, with YIN pitch detection.
+Chromatic tuner in the browser — **Vite + React + TypeScript**. Uses the microphone via `getUserMedia` and Web Audio, with pitch detection.
 
-Standard tuning: **E2 A2 D3 G3 B3 E4** (A4 = 440 Hz).
+Any pitched sound: voice, instrument, whistle. Shows the nearest note and whether you’re sharp, flat, or in tune (A4 = 440 Hz).
 
 ## Local development
 
@@ -48,11 +48,11 @@ npx vercel
 
 1. User taps **Start listening** (required gesture for `AudioContext`)
 2. Mic stream → `AnalyserNode` time-domain samples
-3. YIN (`pitchfinder`) estimates fundamental frequency
-4. Frequency maps to nearest note + cents vs closest guitar string
+3. Pitch detection (`pitchfinder`) estimates fundamental frequency
+4. Frequency maps to nearest equal-tempered note + cents offset
 
 ## Browser notes
 
 - Grant microphone permission when prompted
 - Use Chrome, Safari, Firefox, or Edge on a secure context (HTTPS / localhost)
-- Quiet rooms and a clear single-note pluck work best
+- Quiet rooms and a clear single pitch work best
