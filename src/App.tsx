@@ -110,9 +110,9 @@ function App() {
 
       {!isSpiritual && (
         <header className="app__header">
-          <p className="app__brand">Tuner</p>
+          <p className="app__brand">Chromatic Tuner</p>
           <p className="app__lede">
-            Any note · A4 = 440 Hz · tells you when you&apos;re in tune
+            A4 = 440 Hz · tells you when you&apos;re in tune
           </p>
         </header>
       )}

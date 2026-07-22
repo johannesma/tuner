@@ -153,6 +153,10 @@
   opacity: 0.92;
 }
 
+.display--idle .display__level {
+  visibility: hidden;
+}
+
 .display__hint {
   margin: 0;
   font-size: 0.85rem;

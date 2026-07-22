@@ -1,6 +1,6 @@
-const SCRAP_COUNT = 100
-const DRIFT_DISTANCE_PX = 60
-const DRIFT_SPEED_PX_PER_S = 1
+const SCRAP_COUNT = 60
+const DRIFT_DISTANCE_PX = 120
+const DRIFT_SPEED_PX_PER_S = 3
 const DRIFT_DURATION_S = DRIFT_DISTANCE_PX / DRIFT_SPEED_PX_PER_S
 
 /** Irregular crumpled-paper scrap outlines, centered near origin. */

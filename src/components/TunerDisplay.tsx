@@ -25,7 +25,7 @@ export function TunerDisplay({
   level,
 }: TunerDisplayProps) {
   const inTune = cents != null && Math.abs(cents) <= 5
-  const noteLabel = note ? `${note.name}${note.octave}` : '—'
+  const noteLabel = note ? `${note.name}${note.octave}` : ''
   const centsLabel =
     cents == null ? '—' : `${cents > 0 ? '+' : ''}${cents}¢`
   const freqLabel =
@@ -37,7 +37,7 @@ export function TunerDisplay({
     >
       <p className="display__hint">{hintForCents(cents, isListening)}</p>
       <p className="display__note" aria-live="polite">
-        {noteLabel}
+        {noteLabel || '\u00a0'}
       </p>
       <CentsNeedle cents={cents} inTune={inTune} />
       <div className="display__meta">
@@ -45,24 +45,26 @@ export function TunerDisplay({
         <span>{freqLabel}</span>
       </div>
 
-      {isListening && (
-        <div className="display__level" title="Microphone input level">
-          <span className="display__level-label">Mic</span>
+      <div
+        className="display__level"
+        title="Microphone input level"
+        aria-hidden={!isListening}
+      >
+        <span className="display__level-label">Mic</span>
+        <div
+          className="display__level-track"
+          role="meter"
+          aria-label="Microphone level"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(level * 100)}
+        >
           <div
-            className="display__level-track"
-            role="meter"
-            aria-label="Microphone level"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(level * 100)}
-          >
-            <div
-              className="display__level-fill"
-              style={{ transform: `scaleX(${Math.min(1, level)})` }}
-            />
-          </div>
+            className="display__level-fill"
+            style={{ transform: `scaleX(${Math.min(1, level)})` }}
+          />
         </div>
-      )}
+      </div>
 
       <p
         className={`display__status ${inTune ? 'display__status--visible' : ''}`}
